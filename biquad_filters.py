@@ -74,7 +74,7 @@ class BiQuadDF1(BiQuad):
             self.b0 = fixpt.FixedPoint(0.0, b_fptype)
             self.b1 = fixpt.FixedPoint(0.0, b_fptype)
             self.b2 = fixpt.FixedPoint(0.0, b_fptype)
-            self.a1 = fixpt.FixedPoint(0.0, fixpt.FixedPointType(config.A_NBITS, config.A1_FRACBITS - 1, fixpt.QuantPolicy.Round, fixpt.SatPolicy.Exception))
+            self.a1 = fixpt.FixedPoint(0.0, fixpt.FixedPointType(config.A_NBITS, config.A1_FRACBITS, fixpt.QuantPolicy.Round, fixpt.SatPolicy.Exception))
             self.a2 = fixpt.FixedPoint(0.0, fixpt.FixedPointType(config.A_NBITS, config.A2_FRACBITS, fixpt.QuantPolicy.Round, fixpt.SatPolicy.Exception))
 
         def from_tf(self, b, a):
