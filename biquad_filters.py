@@ -143,11 +143,12 @@ class BiQuadDF1(BiQuad):
             accum += self._b_fp[l+1] * self._input_hist[l]
             accum -= self._a_fp[l] * self._output_hist[l]
         # quantization
-        y_fp = self._output_fptype(accum)
+        state = self._state_fptype(accum)
+        y_fp = self._output_fptype(state)
         # state update
         self._input_hist.insert(0, u_fp)
         self._input_hist.pop(-1)
-        self._output_hist.insert(0, self._state_fptype(accum))
+        self._output_hist.insert(0, state)
         self._output_hist.pop(-1)
         # output
         return y_fp.float if convert else y_fp.int
