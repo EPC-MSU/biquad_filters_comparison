@@ -37,13 +37,11 @@ class BiQuad(ctrl.TransferFunction):
     def output(self, u, convert = False):
         # prepare output buffer
         N = len(u)
-        tout = np.ndarray(N, dtype = np.float64)
         yout = np.ndarray(N, dtype = np.float64 if convert else np.int32) # TODO enshure that 32 bits is enought
         # simulation
         for k in range(N):
-            tout[k] = self.dt * k
             yout[k] = self.step(u[k], convert = convert)
-        return tout, yout
+        return yout
 
 
 class BiQuadDF1(BiQuad):
