@@ -20,5 +20,5 @@
    * Синтез фильтров разного типа.
    * Сравнение с реализацие с плавающими точками (моделирвоание, диаграмма Боде)
 * **`test_biquad_collab.ipynb`** --- блокнот-демонстрация для GoogleCollab
-   * Запуск блокнота: https://colab.research.google.com/github/disRecord/biquad_filters_comparison/blob/master/test_biquad_collab.ipynb
+   * Запуск блокнота: https://colab.research.google.com/github/EPC-MSU/biquad_filters_comparison/blob/master/test_biquad_collab.ipynb
    * Функционал аналогичен attachment:test_biquad.ipynb 
