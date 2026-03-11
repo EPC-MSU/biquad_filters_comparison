@@ -10,14 +10,17 @@ Realization variants extends control.TransferFunction class.
 * Standard simulation works with these coefficients.
 * To fully take in account realization-specific effects use output() method.
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Tuple, Union
 
 import control as ctrl
 
 import fixpt
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from tabulate import tabulate
 
@@ -25,7 +28,7 @@ from tabulate import tabulate
 class BiQuad(ctrl.TransferFunction):
     """Float-point Direct Form I biquadratic filter realization."""
 
-    def __init__(self, b, a, dt):
+    def __init__(self, b: ArrayLike, a: ArrayLike, dt: float):
         """Create lloat-point biquadratic filter realization.
 
         Paramters
@@ -42,7 +45,7 @@ class BiQuad(ctrl.TransferFunction):
         self._input_hist = [0.0, 0.0]
         self._output_hist = [0.0, 0.0]
 
-    def set_state(self, input_hist=[0.0, 0.0], output_hist=[0.0, 0.0]):
+    def set_state(self, input_hist: ArrayLike = [0.0, 0.0], output_hist: ArrayLike = [0.0, 0.0]) -> None:
         """Set DF1 filter state.
 
         Parameters
@@ -55,7 +58,7 @@ class BiQuad(ctrl.TransferFunction):
         self._input_hist = input_hist
         self._output_hist = output_hist
 
-    def step(self, u, convert=False):
+    def step(self, u: float, convert: bool = False) -> Union[float, int]:
         """Perform one simulation step.
 
         Parameters
@@ -88,7 +91,7 @@ class BiQuad(ctrl.TransferFunction):
         # return output
         return y
 
-    def output(self, u, convert=False):
+    def output(self, u: np.ndarray, convert: bool = False) -> np.ndarray:
         """Simulate filter.
 
         Parameters
@@ -165,7 +168,7 @@ class BiQuadDF1(BiQuad):
             self.a1 = fixpt.FixedPoint(0.0, fixpt.FixedPointType(config.A_NBITS, config.A1_FRACBITS, fixpt.QuantPolicy.Round, fixpt.SatPolicy.Exception))
             self.a2 = fixpt.FixedPoint(0.0, fixpt.FixedPointType(config.A_NBITS, config.A2_FRACBITS, fixpt.QuantPolicy.Round, fixpt.SatPolicy.Exception))
 
-        def from_tf(self, b, a):
+        def from_tf(self, b: ArrayLike, a: ArrayLike) -> BiQuadDF1.Registers:
             """Assign filter realization coefficients from transfer function.
 
             Parameters
@@ -182,7 +185,7 @@ class BiQuadDF1(BiQuad):
             self.a2.float = a[2]
             return self
 
-        def from_raw(self, b0, b1, b2, a1, a2):
+        def from_raw(self, b0: int, b1: int, b2: int, a1: int, a2: int) -> BiQuadDF1.Registers:
             """Assign filter realization coefficients from their int representation."""
             self.b0.int = b0
             self.b1.int = b1
@@ -191,7 +194,7 @@ class BiQuadDF1(BiQuad):
             self.a2.int = a2
             return self
 
-        def to_raw(self):
+        def to_raw(self) -> Tuple[int, int, int, int, int]:
             """Get int representation of filter realization coefficients.
 
             Return
@@ -210,7 +213,7 @@ class BiQuadDF1(BiQuad):
             desc += tabulate(table, headers=["Register", "Value", "Raw value"])
             return desc
 
-    def __init__(self, registers, config):
+    def __init__(self, registers: BiQuadDF1.Registers, config: BiQuadDF1.Config):
         """Create fixed-point Direct Form I biquadratic filter.
 
         Parameters
@@ -235,7 +238,7 @@ class BiQuadDF1(BiQuad):
         self._input_hist = [self._input_fptype(0.0), self._input_fptype(0.0)]
         self._output_hist = [self._state_fptype(0.0), self._state_fptype(0.0)]
 
-    def set_state(self, input_hist=[0.0, 0.0], output_hist=[0.0, 0.0]):
+    def set_state(self, input_hist: ArrayLike = [0.0, 0.0], output_hist: ArrayLike = [0.0, 0.0]) -> None:
         """Set DF1 filter state. Float values are converted to fixed-points.
 
         Parameters
@@ -250,7 +253,7 @@ class BiQuadDF1(BiQuad):
         for s, v in zip(self._output_hist, output_hist):
             s.float = v
 
-    def set_state_raw(self, input_hist=[0, 0], output_hist=[0, 0]):
+    def set_state_raw(self, input_hist: ArrayLike = [0, 0], output_hist: ArrayLike = [0, 0]) -> None:
         """Set DF1 filter fixed-point state from its int representation.
 
         Parameters
@@ -265,7 +268,7 @@ class BiQuadDF1(BiQuad):
         for s, v in zip(self._output_hist, output_hist):
             s.int = v
 
-    def step(self, u, convert=False):
+    def step(self, u: float, convert: bool = False) -> Union[float, int]:
         # input
         u_fp = self._input_fptype(float(u)) if convert else self._input_fptype(int_value=u)
         # calulate output
@@ -320,7 +323,7 @@ class BiQuadCoupled(BiQuad):
         alpha1: fixpt.FixedPoint
         alpha2: fixpt.FixedPoint
 
-        def __init__(self, config):
+        def __init__(self, config: BiQuadCoupled.Config):
             """Create filter coefficients structure according to filter configuration parameters.
 
             Round quantization policy is used.
@@ -340,7 +343,7 @@ class BiQuadCoupled(BiQuad):
             self.alpha1 = fixpt.FixedPoint(0.0, alpha_fptype)
             self.alpha2 = fixpt.FixedPoint(0.0, alpha_fptype)
 
-        def from_tf(self, b, a):
+        def from_tf(self, b: ArrayLike, a: ArrayLike) -> BiQuadCoupled.Registers:
             """Assign filter realization coefficients from transfer function.
 
             Parameters
@@ -368,7 +371,7 @@ class BiQuadCoupled(BiQuad):
             self.alpha2.float = alpha[1]
             return self
 
-        def from_raw(self, q0, q1, q2, alpha1, alpha2):
+        def from_raw(self, q0: int, q1: int, q2: int, alpha1: int, alpha2: int) -> BiQuadCoupled.Registers:
             """Assign filter realization coefficients from their int representation."""
             self.q0.int = q0
             self.q1.int = q1
@@ -377,7 +380,7 @@ class BiQuadCoupled(BiQuad):
             self.alpha2.int = alpha2
             return self
 
-        def to_raw(self):
+        def to_raw(self) -> Tuple[int, int, int, int, int]:
             """Get int representation of filter realization coefficients.
 
             Return
@@ -396,7 +399,7 @@ class BiQuadCoupled(BiQuad):
             desc += tabulate(table, headers=["Register", "Value", "Raw value"])
             return desc
 
-    def __init__(self, registers, config):
+    def __init__(self, registers: BiQuadCoupled.Register, config: BiQuadCoupled.Config):
         """Create fixed-point Coupled Form biquadratic filter.
 
         Parameters
@@ -428,7 +431,7 @@ class BiQuadCoupled(BiQuad):
         self._alpha = alpha_fp
         self._q = q_fp
 
-    def set_state(self, s1=0.0, s2=0.0):
+    def set_state(self, s1: float = 0.0, s2: float = 0.0) -> None:
         """Set coupled form biquad filter state. Float values are converted to fixed-points.
 
         Parameters
@@ -441,7 +444,7 @@ class BiQuadCoupled(BiQuad):
         self._state[0].float = s1
         self._state[1].float = s2
 
-    def set_state_raw(self, s1=0, s2=0):
+    def set_state_raw(self, s1: int = 0, s2: int = 0) -> None:
         """Set coupled form fixed-point biquad filter state from its int representation.
 
         Parameters
@@ -454,7 +457,7 @@ class BiQuadCoupled(BiQuad):
         self._state[0].int = s1
         self._state[1].int = s2
 
-    def step(self, u, convert=False):
+    def step(self, u: float, convert: bool = False) -> Union[float, int]:
         # input
         u_fp = self._input_fptype(float(u)) if convert else self._input_fptype(int_value=u)
         # calculate output

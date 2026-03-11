@@ -1,11 +1,14 @@
 """Filter synthesis."""
 
+from typing import Tuple, List
+
 import numpy as np
+from numpy.typing import ArrayLike
 
 import scipy.signal as sig
 
 
-def lowpass1(f_cut, T):
+def lowpass1(f_cut: float, T: float) -> Tuple[List[float], List[float]]:
     """Lowpass 1nd order butterwort filter synthesis.
 
     Calculate coefficients of first-order lowpass filter with cut frequency f_cut (Hz).
@@ -15,7 +18,7 @@ def lowpass1(f_cut, T):
     return [1-a, 0, 0], [1, -a, 0]
 
 
-def lowpass2(f_cut, T):
+def lowpass2(f_cut: float, T: float) -> Tuple[List[float], List[float]]:
     """Lowpass 2nd order butterwort filter synthesis.
 
     Calculate coefficients of second-order Butterwort lowpass filter with cut frequency f_cut (Hz).
@@ -26,7 +29,7 @@ def lowpass2(f_cut, T):
     return b, a
 
 
-def notch2(f_nominal, f_width, T):
+def notch2(f_nominal: float, f_width: float, T: float) -> Tuple[List[float], List[float]]:
     """Two parameters Notch (band-stop) filter synthesis.
 
     Calculate coffecients of notch filter with stop-band center at f_nominal (Hz) with width f_width (Hz).
@@ -41,7 +44,7 @@ def notch2(f_nominal, f_width, T):
     return b, a
 
 
-def notch3(f_nominal, f_width, L_stop, T):
+def notch3(f_nominal, f_width: float, L_stop: float, T: float) -> Tuple[List[float], List[float]]:
     """Notch (band-stop) filter synthesis.
 
     Calculate coffecients of notch filter with stop-band center at f_nominal (Hz) with width f_width (Hz).

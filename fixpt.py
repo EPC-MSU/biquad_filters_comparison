@@ -34,8 +34,10 @@ Example
     c = ftype(tmp)
 
 """
+from __future__ import annotations
 
 import math
+from typing import Optional, Union
 
 #
 # quantization methods
@@ -55,7 +57,7 @@ class QuantPolicy:
 
         """
 
-        def __init__(self, fracbits):
+        def __init__(self, fracbits: int):
             """Create quantization policy with given number of fractional bits.
 
             Parameters
@@ -66,11 +68,11 @@ class QuantPolicy:
             self.fracbits = fracbits
 
         @property
-        def name(self):
+        def name(self) -> str:
             """Return policy name."""
             return type(self).__name__
 
-        def __call__(self, value):
+        def __call__(self, value: Union[float, FixedPointBase]) -> int:
             """Perform quantization (truncation) of given number according to quantization policy.
 
             Implement this function in subclass to create new quantozation policy.
@@ -90,7 +92,7 @@ class QuantPolicy:
     class Truncate(QuantBase):
         """Quantization by simple truncation: exact value is replaced by nearest smaller allowed value."""
 
-        def __call__(self, value):
+        def __call__(self, value: Union[float, FixedPointBase]) -> int:
             if isinstance(value, FixedPointBase):
                 rshift = value.fracbits - self.fracbits
                 if rshift >= 0:
@@ -105,7 +107,7 @@ class QuantPolicy:
     class TruncateToZero(QuantBase):
         """Quantization by symmetric truncation: exact value is replaced by nearest allowed value which is closer to zero."""
 
-        def __call__(self, value):
+        def __call__(self, value: Union[float, FixedPointBase]) -> int:
             """Truncate value to the nearest allowed value which is closer zero."""
             if isinstance(value, FixedPointBase):
                 rshift = value.fracbits - self.fracbits
@@ -124,7 +126,7 @@ class QuantPolicy:
     class Round(QuantBase):
         """Quantization by symmetric truncation: exact value is replaced by nearest allowed value."""
 
-        def __call__(self, value):
+        def __call__(self, value: Union[float, FixedPointBase]) -> int:
             if isinstance(value, FixedPointBase):
                 rshift = value.fracbits - self.fracbits
                 if rshift > 0:
@@ -139,7 +141,7 @@ class QuantPolicy:
     class Exception(QuantBase):  # noqa A001
         """Raise exception if quantization is necessary (precision is lost)."""
 
-        def __call__(self, value):
+        def __call__(self, value: Union[float, FixedPointBase]) -> int:
             if isinstance(value, FixedPointBase):
                 lshift = self.fracbits - value.fracbits
                 if lshift >= 0:
@@ -192,11 +194,11 @@ class SatPolicy:
             self.min_value = -2**(bits-1)
 
         @property
-        def name(self):
+        def name(self) -> str:
             """Saturation policy name."""
             return type(self).__name__
 
-        def __call__(self, value):
+        def __call__(self, value: int) -> int:
             """Saturate given integer number according to saturation policy.
 
             Implement this function in subclass to create new saturation policy.
@@ -216,7 +218,7 @@ class SatPolicy:
     class Exception(SatBase):  # noqa A001
         """Raise exception if saturation occurs."""
 
-        def __call__(self, value):
+        def __call__(self, value: int) -> int:
             if value > self.max_value or value < self.min_value:
                 raise ValueError(f"SatPolicy.Exception: value {value} is outside [{self.min_value}, {self.max_value}].")
             return value
@@ -224,7 +226,7 @@ class SatPolicy:
     class Saturation(SatBase):
         """Saturate number if lover or higher limit is hit."""
 
-        def __call__(self, value):
+        def __call__(self, value) -> int:
             if value > self.max_value:
                 return self.max_value
             if value < self.min_value:
@@ -234,7 +236,7 @@ class SatPolicy:
     class Wrap(SatBase):
         """Wrap int representation of number if lover or higher limit is hit."""
 
-        def __init__(self, bits):
+        def __init__(self, bits) -> int:
             """Create wrap saturation policy. Int representation is wrapped according to signed integer rules.
 
             Parameters
@@ -245,7 +247,7 @@ class SatPolicy:
             super(SatPolicy.Wrap, self).__init__(bits)
             self.mask = 2**bits - 1
 
-        def __call__(self, value):
+        def __call__(self, value: int) -> int:
             value &= self.mask
             if value > self.max_value:
                 value -= self.mask + 1
@@ -271,7 +273,7 @@ class FixedPointType:
         Quantization policy.
     """
 
-    def __init__(self, bits, fracbits, quant, sat):
+    def __init__(self, bits: int, fracbits: int, quant: QuantPolicy.QuantBase, sat: SatPolicy.SatBase):
         """Create fixed point type.
 
         Parameters
@@ -298,14 +300,14 @@ class FixedPointType:
         self.quant = quant(fracbits)
         self.sat = sat(bits)
 
-    def __eq__(self, other):
+    def __eq__(self, other: FixedPointType) -> bool:
         """Fixed-point types are equal if they have the same width, number of fractional bits, saturation and quantization policies."""
         return self.bits == other.bits and \
             self.fracbits == other.fracbits and \
             type(self.quant) == type(other.quant) and \
             type(self.sat) == type(other.sat)  # noqa: E721
 
-    def reduce(self, value):
+    def reduce(self, value: Union[float, FixedPointBase]) -> int:
         """Reduce given value according to quantization and saturation policy to int representation of fixed-point type.
 
         Parameters
@@ -320,14 +322,14 @@ class FixedPointType:
         """
         return self.sat(self.quant(value))
 
-    def __call__(self, value=None, int_value=None):
+    def __call__(self, value: Union[None, float, FixedPointBase] = None, int_value: Optional[int] = None) -> FixedPoint:
         """Reduce given value to given fixed point type.
 
         Parameters
         ----------
-        value: float or FixedPointBase
+        value: float or FixedPointBase, optional
             Value to reduce.
-        int_value: int
+        int_value: int, optional
             Int representation of fixed point. Must be None if value is specified.
 
         Return
@@ -337,7 +339,7 @@ class FixedPointType:
         """
         return FixedPoint(value, self, int_value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return string representation if fixed point type."""
         return f"fixpt({self.bits},{self.fracbits},{self.quant.name},{self.sat.name})"
 
@@ -351,7 +353,7 @@ class FixedPointBase:
         Number of fracbits.
     """
 
-    def __init__(self, int_value, fracbits):
+    def __init__(self, int_value: int, fracbits: int):
         """Create fixed point value with arbitrary precision.
 
         Parameters
@@ -367,16 +369,16 @@ class FixedPointBase:
         self.fracbits = fracbits
 
     @property
-    def float(self):  # noqa A003
+    def float(self) -> float:  # noqa A003
         """Return float value corresponding to fixed-point."""
         return self._int / (2**self.fracbits)
 
     @property
-    def int(self):  # noqa A003
+    def int(self) -> int:  # noqa A003
         """Return int representation of fixed-point."""
         return self._int
 
-    def __add__(self, other):
+    def __add__(self, other: FixedPointBase) -> FixedPointBase:
         other_lshift = self.fracbits - other.fracbits
         if other_lshift >= 0:
             int_sum = self._int + (other._int << other_lshift)
@@ -385,10 +387,10 @@ class FixedPointBase:
             int_sum = other._int + (self._int << (-other_lshift))
             return FixedPointBase(int_sum, other.fracbits)
 
-    def __radd__(self, other):
+    def __radd__(self, other: FixedPointBase) -> FixedPointBase:
         return self.__add__(self, other)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: FixedPointBase) -> FixedPointBase:
         other_lshift = self.fracbits - other.fracbits
         if other_lshift >= 0:
             self._int += other._int << other_lshift
@@ -397,7 +399,7 @@ class FixedPointBase:
             self.fracbits = other.fracbits
         return self
 
-    def __sub__(self, other):
+    def __sub__(self, other: FixedPointBase) -> FixedPointBase:
         other_lshift = self.fracbits - other.fracbits
         if other_lshift >= 0:
             int_sum = self._int - (other._int << other_lshift)
@@ -406,7 +408,7 @@ class FixedPointBase:
             int_sum = (self._int << (-other_lshift)) - other._int
             return FixedPointBase(int_sum, other.fracbits)
 
-    def __rsub__(self, other):
+    def __rsub__(self, other: FixedPointBase) -> FixedPointBase:
         other_lshift = self.fracbits - other.fracbits
         if other_lshift >= 0:
             int_sum = (other._int << other_lshift) - self._int
@@ -415,7 +417,7 @@ class FixedPointBase:
             int_sum = other._int - (self._int << (-other_lshift))
             return FixedPointBase(int_sum, other.fracbits)
 
-    def __isub__(self, other):
+    def __isub__(self, other: FixedPointBase) -> FixedPointBase:
         other_lshift = self.fracbits - other.fracbits
         if other_lshift >= 0:
             self._int -= other._int << other_lshift
@@ -424,31 +426,31 @@ class FixedPointBase:
             self.fracbits = other.fracbits
         return self
 
-    def __mul__(self, other):
+    def __mul__(self, other: FixedPointBase) -> FixedPointBase:
         fracbits = self.fracbits + other.fracbits
         return FixedPointBase(self._int * other._int, fracbits)
 
-    def __rmul(self, other):
+    def __rmul(self, other: FixedPointBase) -> FixedPointBase:
         return self.__mul__(self, other)
 
-    def __imul__(self, other):
+    def __imul__(self, other: FixedPointBase) -> FixedPointBase:
         self.fracbits += other.fracbits
         self._int *= other._int
         return self
 
-    def __neg__(self):
+    def __neg__(self) -> FixedPointBase:
         return FixedPointBase(-self._int, self.fracbits)
 
-    def __lshift__(self, other):
+    def __lshift__(self, other: int) -> FixedPointBase:
         return FixedPointBase(self._int, self.fracbits - other)
 
-    def __rshift__(self, other):
+    def __rshift__(self, other: int) -> FixedPointBase:
         return FixedPointBase(self._int, self.fracbits + other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"FixedPointBase({self.float}, {self.fracbits})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.float)
 
 
@@ -461,16 +463,18 @@ class FixedPoint(FixedPointBase):
         Fixed-point type instance.
     """
 
-    def __init__(self, value=None, fptype=None, int_value=None):
+    def __init__(self, value: Union[None, float, FixedPointBase] = None, fptype: FixedPointType = None, int_value: int = None):
         """Create fixed point value of specific fixed-point type.
 
         If neither value or int_value is specified default value is zero.
 
         Parameters
         ----------
-        value: float or FixedPointBase
+        value: float or FixedPointBase, optional
             Initial value. Quantized and saturated according to fixed point type policies.
-        int_value: int
+        fptype: FixedPointType
+            Fixed point type specification.
+        int_value: int, optional
             Int representation of fixed point. Must be None if value is specified.
         """
         # fixed point type
@@ -485,7 +489,7 @@ class FixedPoint(FixedPointBase):
         else:
             super(FixedPoint, self).__init__(0, fptype.fracbits)
 
-    def assign(self, value):
+    def assign(self, value: Union[float, FixedPointBase]) -> None:
         """Assign value to fixed-point variable. Fixed-point type quantization and saturation rules are applied.
 
         Parameters
@@ -496,39 +500,39 @@ class FixedPoint(FixedPointBase):
         self._int = self.fptype.reduce(value)
 
     @FixedPointBase.float.setter
-    def float(self, value):  # noqa A003
+    def float(self, value: float) -> None:  # noqa A003
         """Assign value of fixed-point variable. Equivalent of assign() method."""
         self._int = self.fptype.reduce(float(value))
 
     @FixedPointBase.int.setter
-    def int(self, value):  # noqa A003
+    def int(self, value: int) -> None:  # noqa A003
         """Set int representation of fixed-point variable. Saturation rules are applied."""
         self._int = self.fptype.sat(int(value))
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: FixedPointBase) -> FixedPoint:
         value = self.__add__(other)
         self._int = self.fptype.reduce(value)
         return self
 
-    def __isub__(self, other):
+    def __isub__(self, other: FixedPointBase) -> FixedPoint:
         value = self.__sub__(other)
         self._int = self.fptype.reduce(value)
         return self
 
-    def __imul__(self, other):
+    def __imul__(self, other: FixedPointBase) -> FixedPoint:
         value = self.__mul__(other)
         self._int = self.fptype.reduce(value)
         return self
 
-    def __ilshift(self, other):
+    def __ilshift(self, other: int) -> FixedPoint:
         value = self.__lshift__(other)
         self._int = self.fptype.reduce(value)
         return self
 
-    def __irshift(self, other):
+    def __irshift(self, other: int) -> FixedPoint:
         value = self.__rshift__(other)
         self._int = self.fptype.reduce(value)
         return self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"FixedPoint({self.float}, {self.fptype})"
