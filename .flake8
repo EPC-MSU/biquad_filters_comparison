@@ -4,7 +4,7 @@ inline-quotes = double
 multiline-quotes = """ 
 builtins = _
 verbose = 2
-max-line-length = 160
+max-line-length = 120
 
 # Files and folders ignore list
 # -----------------------------
